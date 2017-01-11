@@ -94,22 +94,31 @@ public class PaginationFragment extends BaseFragment {
         _subscriptions.clear ();
     }
 
+
     /**
-     * Fake Observable that simulates a network call and then sends down a list of items
+     *
+     *  Fake Observable that simulates a network call and then sends down a list of items
+     * @param start item项 开始加载的编号
+     * @param count 一次刷新 加载多少项
+     * @return
      */
-    private Observable<List<String>> _itemsFromNetworkCall(int start, int count) {
-        return Observable.just (true)
-              .observeOn(AndroidSchedulers.mainThread())
-              .doOnNext(dummy -> _progressBar.setVisibility(View.VISIBLE))
-              .delay(2, TimeUnit.SECONDS)
-              .map(dummy -> {
-                  List<String> items = new ArrayList<>();
-                  for (int i = 0; i < count; i++) {
-                      items.add("Item " + (start + i));
-                  }
-                  return items;
-              });
+    private Flowable<List<String>> _itemsFromNetworkCall(int start, int count) {
+        return Flowable
+                .just(true)
+                .observeOn(AndroidSchedulers.mainThread())
+                //每次触发加载新数据的时候 显示 progressbar
+                .doOnNext(dummy -> _progressBar.setVisibility(View.VISIBLE))//每次调用 onNext 触发
+                .delay(2, TimeUnit.SECONDS)
+                .map(dummy -> {//boolean to List<String> transformed
+                    List<String> items = new ArrayList<>();
+                    for (int i = 0; i < count; i++) {
+                        items.add("Item " + (start + i));
+                    }
+                    return items;
+                });
     }
+
+
 
 
     // -----------------------------------------------------------------------------------
