@@ -1,9 +1,11 @@
 package com.morihacky.android.rxjava;
 
 import android.app.Application;
+
 import com.morihacky.android.rxjava.volley.MyVolley;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
+
 import timber.log.Timber;
 
 public class MyApp
@@ -26,9 +28,6 @@ public class MyApp
 
         _instance = (MyApp) getApplicationContext();
         _refWatcher = LeakCanary.install(this);
-
-        // for better RxJava debugging
-        //RxJavaHooks.enableAssemblyTracking();
 
         // Initialize Volley
         MyVolley.init(this);

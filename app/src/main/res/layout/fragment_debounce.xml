@@ -15,11 +15,55 @@
         android:text="@string/msg_demo_debounce"
         />
 
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:checkedButton="@+id/radioButton1"
+        >
+
+        <RadioButton
+            android:text="debounce/throttleTimeout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioButton1"
+            android:lines="3"
+            android:layout_weight="1"/>
+
+        <RadioButton
+            android:text="sample/throttleLast"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioButton2"
+            android:layout_weight="1"/>
+
+
+        <RadioButton
+            android:text="throttleFirst"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:id="@+id/radioButton3"
+            android:layout_weight="1"/>
+
+    </RadioGroup>
+
+
     <LinearLayout
         android:orientation="horizontal"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
+        android:layout_gravity="center_vertical"
         >
+
+
+        <CheckBox
+            android:text="CheckBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/checkBox"
+
+            android:layout_weight="0"/>
 
         <EditText
             android:id="@+id/input_txt_debounce"
@@ -27,7 +71,7 @@
             android:layout_height="match_parent"
             android:layout_width="0dp"
             android:textSize="16sp"
-            android:hint="Enter some search text"
+            android:hint="Enter some search text(use debounce/throttleTimeout)"
             android:inputType="textNoSuggestions"
             />
 

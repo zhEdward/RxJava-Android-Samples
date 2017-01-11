@@ -5,12 +5,20 @@ import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+
 import com.morihacky.android.rxjava.MainActivity;
 import com.morihacky.android.rxjava.R;
 import com.morihacky.android.rxjava.fragments.BaseFragment;
 
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * @see {@link RxBusDemoFragment}
+ * @see {@link RxBusDemo_Bottom3Fragment}
+ * <p>
+ * todo
+ */
 public class RxBusDemo_TopFragment
       extends BaseFragment {
 

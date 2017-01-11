@@ -7,25 +7,29 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import butterknife.Bind;
-import butterknife.ButterKnife;
+
 import com.morihacky.android.rxjava.MainActivity;
 import com.morihacky.android.rxjava.R;
 import com.morihacky.android.rxjava.fragments.BaseFragment;
-import io.reactivex.Flowable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class RxBusDemo_Bottom2Fragment
-      extends BaseFragment {
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Action1;
+import rx.subscriptions.CompositeSubscription;
 
-    @Bind(R.id.demo_rxbus_tap_txt) TextView _tapEventTxtShow;
-    @Bind(R.id.demo_rxbus_tap_count) TextView _tapEventCountShow;
+public class RxBusDemo_Bottom2Fragment extends BaseFragment {
 
+    @Bind(R.id.demo_rxbus_tap_txt)
+    TextView _tapEventTxtShow;
+    @Bind(R.id.demo_rxbus_tap_count)
+    TextView _tapEventCountShow;
     private RxBus _rxBus;
-    private CompositeDisposable _disposables;
+    private CompositeSubscription _subscriptions;
 
     @Override
     public View onCreateView(LayoutInflater inflater,
@@ -45,32 +49,41 @@ public class RxBusDemo_Bottom2Fragment
     @Override
     public void onStart() {
         super.onStart();
-        _disposables = new CompositeDisposable();
+        _subscriptions = new CompositeSubscription ();
 
-        Flowable<Object> tapEventEmitter = _rxBus
-              .asFlowable()
-              .share();
+        Observable<Object> tapEventEmitter = _rxBus.asObservable ().share ();
 
-        _disposables.add(tapEventEmitter.subscribe(event -> {
-            if (event instanceof RxBusDemoFragment.TapEvent) {
+        _subscriptions//
+                .add (tapEventEmitter.subscribe (event -> {
+                    if (event instanceof RxBusDemoFragment.TapEvent) {
+                        _showTapText ();
+                    }
+                }));
+
+        //↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑  equal with
+        _subscriptions.add (tapEventEmitter.ofType (RxBusDemoFragment.TapEvent.class).subscribe (new Action1<RxBusDemoFragment.TapEvent> () {
+            @Override
+            public void call(RxBusDemoFragment.TapEvent tapEvent) {
                 _showTapText();
             }
         }));
 
-        Flowable<Object> debouncedEmitter = tapEventEmitter.debounce(1, TimeUnit.SECONDS);
-        Flowable<List<Object>> debouncedBufferEmitter = tapEventEmitter.buffer(debouncedEmitter);
 
-        _disposables.add(debouncedBufferEmitter
-                               .observeOn(AndroidSchedulers.mainThread())
-                               .subscribe(taps -> {
-                                   _showTapCount(taps.size());
-                               }));
+        Observable<Object> debouncedEmitter = tapEventEmitter.debounce (1, TimeUnit.SECONDS);
+        Observable<List<Object>> debouncedBufferEmitter = tapEventEmitter.buffer (debouncedEmitter);
+
+        _subscriptions//
+                .add (debouncedBufferEmitter//
+                        .observeOn (AndroidSchedulers.mainThread ())//
+                        .subscribe (taps -> {
+                            _showTapCount (taps.size ());
+                        }));
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        _disposables.clear();
+        _subscriptions.clear ();
     }
 
     // -----------------------------------------------------------------------------------
@@ -87,10 +100,6 @@ public class RxBusDemo_Bottom2Fragment
         _tapEventCountShow.setVisibility(View.VISIBLE);
         _tapEventCountShow.setScaleX(1f);
         _tapEventCountShow.setScaleY(1f);
-        ViewCompat.animate(_tapEventCountShow)
-              .scaleXBy(-1f)
-              .scaleYBy(-1f)
-              .setDuration(800)
-              .setStartDelay(100);
+        ViewCompat.animate(_tapEventCountShow).scaleXBy (-1f).scaleYBy (-1f).setDuration (800).setStartDelay (100);
     }
 }

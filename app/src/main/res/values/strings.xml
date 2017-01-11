@@ -4,23 +4,23 @@
     <string name="app_name">Android-RxJava</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-    <string name="github_oauth_token"><!-- InsertYouroAuthTokenHere --></string>
-
-    <string name="btn_demo_schedulers">bg work (schedulers &amp; concurrency)</string>
-    <string name="btn_demo_buffer">accumulate calls (buffer)</string>
-    <string name="btn_demo_debounce">search text listener(debounce)</string>
-    <string name="btn_demo_timeout">Timeout long running jobs</string>
+    <string name="github_oauth_token">6fd01a03a18ed047427eb3e54a3b70640cd02599</string>
+    <!-- InsertYouroAuthTokenHere -->
+    <string name="btn_demo_schedulers">bg work (schedulers &amp; concurrency) \n（网络请求，数据库读写，耗时）异步操作</string>
+    <string name="btn_demo_buffer">accumulate calls (buffer)\n持续性 在某个时间间隔内 订阅对象操作次数缓存（监听单机 双击事件）</string>
+    <string name="btn_demo_debounce">search text listener(debounce) \n高效的订阅对象的操作进行离散性观察(类似TextWatcher ，但更高效监听 onTextChange)</string>
+    <string name="btn_demo_timeout">delayed jobs (timeout) </string>
     <string name="btn_demo_retrofit">Retrofit + RxJava</string>
-    <string name="btn_demo_double_binding_textview">Double binding (PublishSubject)</string>
-    <string name="btn_demo_polling">Polling with RxJava</string>
-    <string name="btn_demo_rxbus">Event Bus with RxJava</string>
-    <string name="btn_demo_form_validation_combinel">Form Validation with CombineLatest</string>
-    <string name="btn_demo_pseudocache">Pseudo cache using concat</string>
+    <string name="btn_demo_double_binding_textview">Double binding (PublishSubject)\n 只要有订阅者被创建，可以手动调用onError onCompleted onNext</string>
+    <string name="btn_demo_polling">Polling with RxJava \n what means???</string>
+    <string name="btn_demo_rxbus">Event Bus with RxJava \n 替代 handler实现activity-activity activity-service间双向通信</string>
+    <string name="btn_demo_form_validation_combinel">Form Validation with CombineLatest\n 同时订阅多个观察对象（表单各子项 合法性同步验证）</string>
+    <string name="btn_demo_pseudocache">Pseudo cache using concat \n（场景：提取缓存数据+服务器异步拉取最新数据）</string>
     <string name="btn_demo_timing">Variations of timing/intervals/delays</string>
     <string name="btn_demo_exponential_backoff">Exponential backoff</string>
-    <string name="btn_demo_rotation_persist">Rotation persist</string>
+    <string name="btn_demo_rotation_persist">Rotation persist（完全不懂这个demo要表达神恶魔）</string>
     <string name="btn_demo_volley">Volley request demo</string>
-    <string name="btn_demo_pagination">Paging example</string>
+    <string name="btn_demo_pagination">Paging example \n 类似于listview 滑动到边界自动加载更多</string>
     <string name="btn_demo_pagination_more">MOAR</string>
 
     <string name="msg_demo_pagination">This is a demo of how you can do a list pagination with Rx. We page 10 items at a time and there are 55 items altogether</string>

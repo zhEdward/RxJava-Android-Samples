@@ -1,5 +1,6 @@
 package com.morihacky.android.rxjava.fragments;
 
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -7,12 +8,14 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+
 import com.morihacky.android.rxjava.R;
 import com.morihacky.android.rxjava.pagination.PaginationAutoFragment;
 import com.morihacky.android.rxjava.rxbus.RxBusDemoFragment;
 import com.morihacky.android.rxjava.volley.VolleyDemoFragment;
+
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class MainFragment
       extends BaseFragment {
@@ -23,6 +26,9 @@ public class MainFragment
                              @Nullable Bundle savedInstanceState) {
         View layout = inflater.inflate(R.layout.fragment_main, container, false);
         ButterKnife.bind(this, layout);
+
+        MediaPlayer player;
+
         return layout;
     }
 
@@ -52,15 +58,18 @@ public class MainFragment
         clickedOn(new RetrofitFragment());
     }
 
-    @OnClick(R.id.btn_demo_polling)
-    void demoPolling() {
-        clickedOn(new PollingFragment());
-    }
 
     @OnClick(R.id.btn_demo_double_binding_textview)
     void demoDoubleBindingWithPublishSubject() {
         clickedOn(new DoubleBindingTextViewFragment());
     }
+
+    @OnClick(R.id.btn_demo_polling)
+    void demoPolling() {
+        clickedOn (new PollingFragment ());
+    }
+
+
 
     @OnClick(R.id.btn_demo_rxbus)
     void demoRxBus() {
@@ -82,15 +91,11 @@ public class MainFragment
         clickedOn(new TimingDemoFragment());
     }
 
-    @OnClick(R.id.btn_demo_timeout)
-    void demoTimeout() {
-        clickedOn(new TimeoutDemoFragment());
-    }
-
     @OnClick(R.id.btn_demo_exponential_backoff)
     void demoExponentialBackoff() {
         clickedOn(new ExponentialBackoffFragment());
     }
+
 
     @OnClick(R.id.btn_demo_rotation_persist)
     void demoRotationPersist() {
@@ -98,15 +103,16 @@ public class MainFragment
         //clickedOn(new RotationPersist1Fragment());
     }
 
+    @OnClick(R.id.btn_demo_volley)
+    void demoVolleyRequest() {
+        clickedOn (new VolleyDemoFragment ());
+    }
+
+
     @OnClick(R.id.btn_demo_pagination)
     void demoPaging() {
         clickedOn(new PaginationAutoFragment());
         //clickedOn(new PaginationFragment());
-    }
-
-    @OnClick(R.id.btn_demo_volley)
-    void demoVolleyRequest() {
-        clickedOn(new VolleyDemoFragment());
     }
 
     private void clickedOn(@NonNull Fragment fragment) {

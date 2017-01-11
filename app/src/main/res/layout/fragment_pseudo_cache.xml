@@ -42,7 +42,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="concat"
+                android:text="concat(slow disk)"
                 />
 
 
@@ -77,7 +77,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="merge\n(optimized)"
+                android:text="merge\n(optimized)，\n 该实现方式适用于 大部分读取缓存+网络拉取新数据 共同显示的场景"
                 />
 
             <Button

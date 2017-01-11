@@ -5,25 +5,34 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+
+import com.morihacky.android.rxjava.R;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import com.morihacky.android.rxjava.R;
-import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.observers.DisposableObserver;
-import io.reactivex.schedulers.Schedulers;
-import java.util.ArrayList;
-import java.util.List;
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 import timber.log.Timber;
 
+/**
+ * 异步耗时操作
+ */
 public class ConcurrencyWithSchedulersDemoFragment
       extends BaseFragment {
 
@@ -32,13 +41,14 @@ public class ConcurrencyWithSchedulersDemoFragment
 
     private LogAdapter _adapter;
     private List<String> _logs;
-    private CompositeDisposable _disposables = new CompositeDisposable();
+    //一个类中存在多个 rx subscribe ，使用集合统一管理
+    private CompositeSubscription _subscriptions = new CompositeSubscription ();
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         ButterKnife.unbind(this);
-        _disposables.clear();
+        _subscriptions.clear ();//memory leak
     }
 
     @Override
@@ -62,22 +72,31 @@ public class ConcurrencyWithSchedulersDemoFragment
         _progress.setVisibility(View.VISIBLE);
         _log("Button Clicked");
 
-        DisposableObserver<Boolean> d = _getDisposableObserver();
+        //全部异步操作
+        Subscription s = _getObservable ().subscribeOn (Schedulers.io ())//异步操作
+              .observeOn(AndroidSchedulers.mainThread()).subscribe (_getObserver ()); // Observer
 
-        _getObservable()
-              .subscribeOn(Schedulers.io())
-              .observeOn(AndroidSchedulers.mainThread())
-              .subscribe(d);
-
-        _disposables.add(d);
+        _subscriptions.add (s);
     }
 
-    private Observable<Boolean> _getObservable() {
-        return Observable.just(true).map(aBoolean -> {
-            _log("Within Observable");
-            _doSomeLongOperation_thatBlocksCurrentThread();
-            return aBoolean;
+    private Observable<String> _getObservable() {
+        //        return Observable.just(true).map(aBoolean -> {
+        //            _log("Within Observable");
+        //            _doSomeLongOperation_thatBlocksCurrentThread();
+        //            return aBoolean;
+        //        });
+
+
+        //通过map(默认在main thread 上调度 耗时操作可能阻塞) 对原先 的 observable 序列进行封装再 emit
+        return Observable.just (false, true).map (new Func1<Boolean, String> () {
+            @Override
+            public String call(Boolean aBoolean) {
+                //  Log.i(TAG, "call: "+aBoolean);
+                _doSomeLongOperation_thatBlocksCurrentThread ();
+                return aBoolean ? "chinese" : "ABC";
+            }
         });
+
     }
 
     /**
@@ -87,11 +106,11 @@ public class ConcurrencyWithSchedulersDemoFragment
      * 2. onError
      * 3. onNext
      */
-    private DisposableObserver<Boolean> _getDisposableObserver() {
-        return new DisposableObserver<Boolean>() {
+    private Observer<String> _getObserver() {
+        return new Observer<String> () {
 
             @Override
-            public void onComplete() {
+            public void onCompleted() {
                 _log("On complete");
                 _progress.setVisibility(View.INVISIBLE);
             }
@@ -104,15 +123,15 @@ public class ConcurrencyWithSchedulersDemoFragment
             }
 
             @Override
-            public void onNext(Boolean bool) {
-                _log(String.format("onNext with return value \"%b\"", bool));
+            public void onNext(String bool) {
+                Log.i (TAG, "onNext: " + bool);
+                _log (String.format ("onNext with return \"%s\"", bool));
             }
         };
     }
 
     // -----------------------------------------------------------------------------------
     // Method that help wiring up the example (irrelevant to RxJava)
-
     private void _doSomeLongOperation_thatBlocksCurrentThread() {
         _log("performing long operation");
 
@@ -132,7 +151,7 @@ public class ConcurrencyWithSchedulersDemoFragment
         } else {
             _logs.add(0, logMsg + " (NOT main thread) ");
 
-            // You can only do below stuff on main thread.
+            // You can only do below stuff on main thread
             new Handler(Looper.getMainLooper()).post(() -> {
                 _adapter.clear();
                 _adapter.addAll(_logs);

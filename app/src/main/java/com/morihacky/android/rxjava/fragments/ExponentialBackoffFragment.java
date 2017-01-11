@@ -7,33 +7,44 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+
 import com.morihacky.android.rxjava.R;
 import com.morihacky.android.rxjava.wiring.LogAdapter;
-import hu.akarnokd.rxjava.interop.RxJavaInterop;
-import io.reactivex.Flowable;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Function;
-import io.reactivex.subscribers.DisposableSubscriber;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.reactivestreams.Publisher;
-import rx.observables.MathObservable;
-import timber.log.Timber;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import rx.Observable;
+import rx.Observer;
+import rx.Subscriber;
+import rx.functions.Func1;
+import rx.observables.MathObservable;
+import rx.subscriptions.CompositeSubscription;
+import timber.log.Timber;
 
 import static android.os.Looper.getMainLooper;
 
+/**
+ * todo rxajava很多语法不知道什么含义怎么使用 暂不看
+ */
 public class ExponentialBackoffFragment
       extends BaseFragment {
 
     @Bind(R.id.list_threading_log) ListView _logList;
     private LogAdapter _adapter;
-    private CompositeDisposable _disposables = new CompositeDisposable();
     private List<String> _logs;
+
+    private CompositeSubscription _subscriptions = new CompositeSubscription ();
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated (savedInstanceState);
+        _setupLogger ();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater,
@@ -45,16 +56,10 @@ public class ExponentialBackoffFragment
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        _setupLogger();
-    }
-
-    @Override
     public void onPause() {
         super.onPause();
 
-        _disposables.clear();
+        _subscriptions.clear ();
     }
 
     @Override
@@ -70,73 +75,66 @@ public class ExponentialBackoffFragment
         _logs = new ArrayList<>();
         _adapter.clear();
 
-        DisposableSubscriber<Object> disposableSubscriber = new DisposableSubscriber<Object>() {
-            @Override
-            public void onNext(Object aVoid) {
-                Timber.d("on Next");
-            }
+        //retryWhen 提供5次 每次间隔1s的尝试 均返回 onError 将停止发射
+        _subscriptions.add (//
+                Observable//
+                        .error (new RuntimeException ("testing")) // always fails
+                        .retryWhen (new RetryWithDelay (5, 1000)) // notice this is called only onError (onNext values sent are ignored)
+                        .doOnSubscribe (() -> _log ("Attempting the impossible 5 times in intervals of 1s"))//
+                        .subscribe (new Observer<Object> () {
+                            @Override
+                            public void onCompleted() {
+                                Timber.d ("on Completed");
+                            }
 
-            @Override
-            public void onComplete() {
-                Timber.d("on Completed");
-            }
+                            @Override
+                            public void onError(Throwable e) {
+                                _log ("Error: I give up!");
+                            }
 
-            @Override
-            public void onError(Throwable e) {
-                _log("Error: I give up!");
-            }
-        };
-
-        Flowable.error(new RuntimeException("testing")) // always fails
-                .retryWhen(new RetryWithDelay(5, 1000)) // notice this is called only onError (onNext
-                // values sent are ignored)
-                .doOnSubscribe(subscription -> _log("Attempting the impossible 5 times in intervals of 1s"))
-                .subscribe(disposableSubscriber);
-
-        _disposables.add(disposableSubscriber);
+                            @Override
+                            public void onNext(Object aVoid) {
+                                Timber.d ("on Next");
+                            }
+                        }));
     }
 
+    // TODO: 2016/12/19 rx 实现 斐波那契
     @OnClick(R.id.btn_eb_delay)
     public void startExecutingWithExponentialBackoffDelay() {
 
         _logs = new ArrayList<>();
         _adapter.clear();
 
-        DisposableSubscriber<Integer> disposableSubscriber = new DisposableSubscriber<Integer>() {
-            @Override
-            public void onNext(Integer integer) {
-                Timber.d("executing Task %d [xx:%02d]", integer, _getSecondHand());
-                _log(String.format("executing Task %d  [xx:%02d]", integer, _getSecondHand()));
-            }
+        _subscriptions.add (//
 
-            @Override
-            public void onError(Throwable e) {
-                Timber.d(e, "arrrr. Error");
-                _log("Error");
-            }
+                Observable.range (1, 4)//
+                        .delay (integer -> {
+                            // Rx-y way of doing the Fibonnaci :P
+                            return MathObservable//
+                                    .sumInteger (Observable.range (1, integer)).flatMap (targetSecondDelay -> Observable.just (integer).delay (targetSecondDelay, TimeUnit.SECONDS));
+                        })//
+                        .doOnSubscribe (() -> _log (String.format ("Execute 4 tasks with delay - time now: [xx:%02d]", _getSecondHand ())))//
+                        .subscribe (new Subscriber<Integer> () {
+                            @Override
+                            public void onCompleted() {
+                                Timber.d ("onCompleted");
+                                _log ("Completed");
+                            }
 
-            @Override
-            public void onComplete() {
-                Timber.d("onCompleted");
-                _log("Completed");
-            }
-        };
+                            @Override
+                            public void onError(Throwable e) {
+                                Timber.d (e, "arrrr. Error");
+                                _log ("Error");
+                            }
 
-        Flowable
-              .range(1, 4)
-              .delay(integer -> {
-                  // Rx-y way of doing the Fibonnaci :P
-                  return RxJavaInterop
-                        .toV2Flowable(MathObservable.sumInteger(rx.Observable.range(1, integer)))
-                        .flatMap(targetSecondDelay -> Flowable
-                              .just(integer)
-                              .delay(targetSecondDelay, TimeUnit.SECONDS));
-              })
-              .doOnSubscribe(s -> _log(String.format("Execute 4 tasks with delay - time now: [xx:%02d]",
-                                                     _getSecondHand())))
-              .subscribe(disposableSubscriber);
+                            @Override
+                            public void onNext(Integer integer) {
+                                Timber.d ("executing Task %d [xx:%02d]", integer, _getSecondHand ());
+                                _log (String.format ("executing Task %d  [xx:%02d]", integer, _getSecondHand ()));
 
-        _disposables.add(disposableSubscriber);
+                            }
+                        }));
     }
 
     // -----------------------------------------------------------------------------------
@@ -176,8 +174,7 @@ public class ExponentialBackoffFragment
     // It's 12am in the morning and i feel lazy dammit !!!
 
     //public static class RetryWithDelay
-    public class RetryWithDelay
-          implements Function<Flowable<? extends Throwable>, Publisher<?>> {
+    public class RetryWithDelay implements Func1<Observable<? extends Throwable>, Observable<?>> {
 
         private final int _maxRetries;
         private final int _retryDelayMillis;
@@ -194,14 +191,14 @@ public class ExponentialBackoffFragment
         // only onNext triggers a re-subscription (onError + onComplete kills it)
 
         @Override
-        public Publisher<?> apply(Flowable<? extends Throwable> inputObservable) {
+        public Observable<?> call(Observable<? extends Throwable> inputObservable) {
 
             // it is critical to use inputObservable in the chain for the result
             // ignoring it and doing your own thing will break the sequence
 
-            return inputObservable.flatMap(new Function<Throwable, Publisher<?>>() {
+            return inputObservable.flatMap (new Func1<Throwable, Observable<?>> () {
                 @Override
-                public Publisher<?> apply(Throwable throwable) {
+                public Observable<?> call(Throwable throwable) {
                     if (++_retryCount < _maxRetries) {
 
                         // When this Observable calls onNext, the original
@@ -210,14 +207,14 @@ public class ExponentialBackoffFragment
                         Timber.d("Retrying in %d ms", _retryCount * _retryDelayMillis);
                         _log(String.format("Retrying in %d ms", _retryCount * _retryDelayMillis));
 
-                        return Flowable.timer(_retryCount * _retryDelayMillis, TimeUnit.MILLISECONDS);
+                        return Observable.timer (_retryCount * _retryDelayMillis, TimeUnit.MILLISECONDS);
                     }
 
                     Timber.d("Argh! i give up");
 
                     // Max retries hit. Pass an error so the chain is forcibly completed
                     // only onNext triggers a re-subscription (onError + onComplete kills it)
-                    return Flowable.error(throwable);
+                    return Observable.error (throwable);
                 }
             });
         }

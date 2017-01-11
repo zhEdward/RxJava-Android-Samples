@@ -7,26 +7,32 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+
 import com.morihacky.android.rxjava.R;
+import com.morihacky.android.rxjava.RxUtils;
 import com.morihacky.android.rxjava.wiring.LogAdapter;
-import io.reactivex.Flowable;
-import io.reactivex.subscribers.DefaultSubscriber;
-import io.reactivex.subscribers.DisposableSubscriber;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import timber.log.Timber;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.functions.Action1;
+import timber.log.Timber;
 
 import static android.os.Looper.getMainLooper;
 import static android.os.Looper.myLooper;
 
+/**
+ * 耗时等待 ，定时操作符
+ */
 public class TimingDemoFragment
       extends BaseFragment {
 
@@ -35,8 +41,14 @@ public class TimingDemoFragment
     private LogAdapter _adapter;
     private List<String> _logs;
 
-    private DisposableSubscriber<Long> _subscriber1;
-    private DisposableSubscriber<Long> _subscriber2;
+    private Subscription _subscription1 = null;
+    private Subscription _subscription2 = null;
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated (savedInstanceState);
+        _setupLogger ();
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater,
@@ -48,16 +60,12 @@ public class TimingDemoFragment
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        _setupLogger();
-    }
-
-    @Override
     public void onDestroyView() {
         super.onDestroyView();
         ButterKnife.unbind(this);
 
+        RxUtils.unsubscribeIfNotNull (_subscription1);
+        RxUtils.unsubscribeIfNotNull (_subscription2);
     }
 // -----------------------------------------------------------------------------------
 
@@ -65,102 +73,97 @@ public class TimingDemoFragment
     public void btn1_RunSingleTaskAfter2s() {
         _log(String.format("A1 [%s] --- BTN click", _getCurrentTimestamp()));
 
-        Flowable.timer(2, TimeUnit.SECONDS)//
-                .subscribe(new DefaultSubscriber<Long>() {
+        Observable.timer (2, TimeUnit.SECONDS)////.just(1).delay(2, TimeUnit.SECONDS)//
+
+                .subscribe (new Observer<Long> () {
                     @Override
-                    public void onNext(Long number) {
-                        _log(String.format("A1 [%s]     NEXT", _getCurrentTimestamp()));
+                    public void onCompleted() {
+                        _log (String.format ("A1 [%s] XXX COMPLETE", _getCurrentTimestamp ()));
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        Timber.e(e, "something went wrong in TimingDemoFragment example");
+                        Timber.e (e, "something went wrong in TimingDemoFragment example");
                     }
 
                     @Override
-                    public void onComplete() {
-                        _log(String.format("A1 [%s] XXX COMPLETE", _getCurrentTimestamp()));
+                    public void onNext(Long number) {
+                        _log (String.format ("A1 [%s]     NEXT", _getCurrentTimestamp ()));
                     }
                 });
     }
 
-    @OnClick(R.id.btn_demo_timing_2)
+    @OnClick(R.id.btn_demo_timing_2)//间隔1s发送一个数据，直到完毕
     public void btn2_RunTask_IntervalOf1s() {
-        if (_subscriber1 != null && !_subscriber1.isDisposed()) {
-            _subscriber1.dispose();
+        if (_subscription1 != null && !_subscription1.isUnsubscribed ()) {
+            _subscription1.unsubscribe ();
             _log(String.format("B2 [%s] XXX BTN KILLED", _getCurrentTimestamp()));
             return;
         }
 
         _log(String.format("B2 [%s] --- BTN click", _getCurrentTimestamp()));
 
-        _subscriber1 = new DisposableSubscriber<Long>() {
-            @Override
-            public void onComplete() {
-                _log(String.format("B2 [%s] XXXX COMPLETE", _getCurrentTimestamp()));
-            }
+        _subscription1 = Observable//
+                .interval (1, TimeUnit.SECONDS)//
+                .subscribe (new Observer<Long> () {
+                    @Override
+                    public void onCompleted() {
+                        _log (String.format ("B2 [%s] XXXX COMPLETE", _getCurrentTimestamp ()));
+                    }
 
-            @Override
-            public void onError(Throwable e) {
-                Timber.e(e, "something went wrong in TimingDemoFragment example");
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                        Timber.e (e, "something went wrong in TimingDemoFragment example");
+                    }
 
-            @Override
-            public void onNext(Long number) {
-                _log(String.format("B2 [%s]     NEXT", _getCurrentTimestamp()));
-            }
-        };
-
-        Flowable
-              .interval(1, TimeUnit.SECONDS)
-              .subscribe(_subscriber1);
+                    @Override
+                    public void onNext(Long number) {
+                        _log (String.format ("B2 [%s]     NEXT", _getCurrentTimestamp ()));
+                    }
+                });
     }
 
     @OnClick(R.id.btn_demo_timing_3)
     public void btn3_RunTask_IntervalOf1s_StartImmediately() {
-        if (_subscriber2 != null && !_subscriber2.isDisposed()) {
-            _subscriber2.dispose();
+        if (_subscription2 != null && !_subscription2.isUnsubscribed ()) {
+            _subscription2.unsubscribe ();
             _log(String.format("C3 [%s] XXX BTN KILLED", _getCurrentTimestamp()));
             return;
         }
 
         _log(String.format("C3 [%s] --- BTN click", _getCurrentTimestamp()));
 
-        _subscriber2 = new DisposableSubscriber<Long>() {
-            @Override
-            public void onNext(Long number) {
-                _log(String.format("C3 [%s]     NEXT", _getCurrentTimestamp()));
-            }
+        _subscription2 = Observable//
+                .interval (0, 1, TimeUnit.SECONDS)//
+                .subscribe (new Observer<Long> () {
+                    @Override
+                    public void onCompleted() {
+                        _log (String.format ("C3 [%s] XXXX COMPLETE", _getCurrentTimestamp ()));
+                    }
 
-            @Override
-            public void onComplete() {
-                _log(String.format("C3 [%s] XXXX COMPLETE", _getCurrentTimestamp()));
-            }
+                    @Override
+                    public void onError(Throwable e) {
+                        Timber.e (e, "something went wrong in TimingDemoFragment example");
+                    }
 
-            @Override
-            public void onError(Throwable e) {
-                Timber.e(e, "something went wrong in TimingDemoFragment example");
-            }
-
-        };
-
-        Flowable
-              .interval(0, 1, TimeUnit.SECONDS)
-              .subscribe(_subscriber2);
+                    @Override
+                    public void onNext(Long number) {
+                        _log (String.format ("C3 [%s]     NEXT", _getCurrentTimestamp ()));
+                    }
+                });
     }
 
     @OnClick(R.id.btn_demo_timing_4)
     public void btn4_RunTask5Times_IntervalOf3s() {
         _log(String.format("D4 [%s] --- BTN click", _getCurrentTimestamp()));
 
-        Flowable
-              .interval(3, TimeUnit.SECONDS)
-              .take(5)
-              .subscribe(new DefaultSubscriber<Long>() {
-                  @Override
-                  public void onNext(Long number) {
-                      _log(String.format("D4 [%s]     NEXT", _getCurrentTimestamp()));
-                  }
+        Observable//
+                .interval (3, TimeUnit.SECONDS).take (5)//
+                .subscribe (new Observer<Long> () {
+                    @Override
+                    public void onCompleted() {
+                        _log (String.format ("D4 [%s] XXX COMPLETE", _getCurrentTimestamp ()));
+                    }
 
                   @Override
                   public void onError(Throwable e) {
@@ -168,10 +171,9 @@ public class TimingDemoFragment
                   }
 
                   @Override
-                  public void onComplete() {
-                      _log(String.format("D4 [%s] XXX COMPLETE", _getCurrentTimestamp()));
+                  public void onNext(Long number) {
+                      _log (String.format ("D4 [%s]     NEXT", _getCurrentTimestamp ()));
                   }
-
               });
     }
 
@@ -179,17 +181,20 @@ public class TimingDemoFragment
     public void btn5_RunTask5Times_IntervalOf3s() {
         _log(String.format("D5 [%s] --- BTN click", _getCurrentTimestamp()));
 
-        Flowable
-              .just("Do task A right away")
-              .doOnNext(input -> _log(String.format("D5 %s [%s]", input, _getCurrentTimestamp())))
-              .delay(1, TimeUnit.SECONDS)
-              .doOnNext(oldInput -> _log(String.format("D5 %s [%s]",
-                                                       "Doing Task B after a delay",
-                                                       _getCurrentTimestamp())))
-              .subscribe(new DefaultSubscriber<String>() {
-                  @Override
-                  public void onComplete() {
-                      _log(String.format("D5 [%s] XXX COMPLETE", _getCurrentTimestamp()));
+        Observable.just ("Do task A right away").doOnNext (new Action1<String> () {
+            @Override
+            public void call(String input) {
+                _log (String.format ("D5 %s [%s]", input, _getCurrentTimestamp ()));
+            }
+        }).delay(1, TimeUnit.SECONDS).doOnNext (new Action1<String> () {
+            @Override
+            public void call(String oldInput) {
+                _log (String.format ("D5 %s [%s]", "Doing Task B after a delay", _getCurrentTimestamp ()));
+            }
+        }).subscribe (new Observer<String> () {
+            @Override
+            public void onCompleted() {
+                _log(String.format("D5 [%s] XXX COMPLETE", _getCurrentTimestamp()));
                   }
 
                   @Override
@@ -230,6 +235,7 @@ public class TimingDemoFragment
     }
 
     private String _getCurrentTimestamp() {
-        return new SimpleDateFormat("k:m:s:S a", Locale.getDefault()).format(new Date());
+        return new SimpleDateFormat ("k:m:s:S a").format (new Date ());
     }
+
 }

@@ -2,11 +2,10 @@ package com.morihacky.android.rxjava.retrofit;
 
 import android.text.TextUtils;
 
-import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
-
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static java.lang.String.format;
@@ -17,7 +16,7 @@ public class GithubService {
     }
 
     public static GithubApi createGithubService(final String githubToken) {
-        Retrofit.Builder builder = new Retrofit.Builder().addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+        Retrofit.Builder builder = new Retrofit.Builder ().addCallAdapterFactory (RxJavaCallAdapterFactory.create ())
               .addConverterFactory(GsonConverterFactory.create())
               .baseUrl("https://api.github.com");
 

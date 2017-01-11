@@ -21,10 +21,10 @@ import java.util.List;
 import butterknife.Bind;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.observers.DisposableObserver;
-import io.reactivex.schedulers.Schedulers;
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 import timber.log.Timber;
 
 public class PseudoCacheMergeFragment
@@ -61,10 +61,9 @@ public class PseudoCacheMergeFragment
 
         Observable.merge(_getCachedData(), _getFreshData())
               .subscribeOn(Schedulers.io())
-              .observeOn(AndroidSchedulers.mainThread())
-              .subscribe(new DisposableObserver<Pair<Contributor,Long>>() {
+              .observeOn(AndroidSchedulers.mainThread()).subscribe (new Subscriber<Pair<Contributor, Long>> () {
                   @Override
-                  public void onComplete() {
+                  public void onCompleted() {
                       Timber.d("done loading all data");
                   }
 
@@ -76,6 +75,8 @@ public class PseudoCacheMergeFragment
                   @Override
                   public void onNext(Pair<Contributor, Long> contributorAgePair) {
                       Contributor contributor = contributorAgePair.first;
+
+                      //两组  observable 顺序 回调 订阅者
 
                       if (_resultAgeMap.containsKey(contributor) &&
                           _resultAgeMap.get(contributor) > contributorAgePair.second) {
@@ -102,6 +103,12 @@ public class PseudoCacheMergeFragment
         return list;
     }
 
+    /**
+     * 获取 本地缓存的 数据
+     *
+     * @return
+     * @see {@link #_initializeCache()}
+     */
     private Observable<Pair<Contributor, Long>> _getCachedData() {
 
         List<Pair<Contributor, Long>> list = new ArrayList<>();
@@ -117,16 +124,18 @@ public class PseudoCacheMergeFragment
             list.add(dataWithAgePair);
         }
 
-        return Observable.fromIterable(list);
+        return Observable.from (list);
     }
 
+    /**
+     * 拉取 服务器上最新数据
+     * @return
+     */
     private Observable<Pair<Contributor, Long>> _getFreshData() {
         String githubToken = getResources().getString(R.string.github_oauth_token);
         GithubApi githubService = GithubService.createGithubService(githubToken);
 
-        return githubService.contributors("square", "retrofit")
-              .flatMap(Observable::fromIterable)
-              .map(contributor -> new Pair<>(contributor, System.currentTimeMillis()));
+        return githubService.contributors("square", "retrofit").flatMap (Observable::from).map(contributor -> new Pair<>(contributor, System.currentTimeMillis()));
     }
 
     private void _initializeCache() {

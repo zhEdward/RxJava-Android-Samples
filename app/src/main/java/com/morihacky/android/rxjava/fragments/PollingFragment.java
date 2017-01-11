@@ -5,45 +5,65 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.Nullable;
+import android.support.v4.media.TransportMediator;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import butterknife.Bind;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
+
 import com.morihacky.android.rxjava.R;
-import io.reactivex.Flowable;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Function;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import org.reactivestreams.Publisher;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import rx.Observable;
+import rx.Observer;
+import rx.Subscription;
+import rx.functions.Action0;
+import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 import timber.log.Timber;
 
-public class PollingFragment
-      extends BaseFragment {
+public class PollingFragment extends BaseFragment {
 
     private static final int INITIAL_DELAY = 0;
     private static final int POLLING_INTERVAL = 1000;
     private static final int POLL_COUNT = 8;
 
-    @Bind(R.id.list_threading_log) ListView _logsList;
+    @Bind(R.id.list_threading_log)
+    ListView _logsList;
 
     private LogAdapter _adapter;
-    private int _counter = 0;
-    private CompositeDisposable _disposables;
     private List<String> _logs;
+
+    private CompositeSubscription _subscriptions;
+    private int _counter = 0;
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        _disposables = new CompositeDisposable();
+        _subscriptions = new CompositeSubscription ();
+
+
+        TransportMediator ss;
+
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated (savedInstanceState);
+        _setupLogger ();
     }
 
     @Override
@@ -56,38 +76,75 @@ public class PollingFragment
     }
 
     @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        _setupLogger();
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
-        _disposables.clear();
+        _subscriptions.unsubscribe ();
         ButterKnife.unbind(this);
+
+        // Parcel.obtain();
     }
+
 
     @OnClick(R.id.btn_start_simple_polling)
     public void onStartSimplePollingClicked() {
 
         final int pollCount = POLL_COUNT;
 
-        Disposable d = Flowable
-              .interval(INITIAL_DELAY, POLLING_INTERVAL, TimeUnit.MILLISECONDS)
-              .map(this::_doNetworkCallAndGetStringResult)
-              .take(pollCount)
-              .doOnSubscribe(subscription -> {
-                  _log(String.format("Start simple polling - %s", _counter));
-              })
-              .subscribe(taskName -> {
-                  _log(String.format(Locale.US,
-                                     "Executing polled task [%s] now time : [xx:%02d]",
-                                     taskName,
-                                     _getSecondHand()));
-              });
 
-        _disposables.add(d);
+        //map的函数高级用法 传入一个是
+        Subscription sp1 = Observable.interval (2000, TimeUnit.MILLISECONDS).map (longvalue -> {
+            return String.valueOf (_counter++);
+        }).take (15).doOnSubscribe (new Action0 () {
+            @Override
+            public void call() {
+                try {
+                    Thread.sleep (3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace ();
+                }
+                _log (String.format ("Start simple polling - %s", _counter));
+                Log.i (TAG, "call: " + String.format ("Start simple polling - %s", _counter));
+            }
+        }).doOnUnsubscribe (new Action0 () {//队列发射完毕 或者 调用unSubscribe() 触发
+            @Override
+            public void call() {
+                Log.i (TAG, "call: " + String.format ("Stop simple polling(unsubscribe) - %s", _counter));
+            }
+        }).subscribeOn (Schedulers.newThread ()).subscribe (new Observer<String> () {
+
+
+            @Override
+            public void onCompleted() {
+                Log.i (TAG, "onCompleted: ");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.i (TAG, "onError: ");
+            }
+
+            @Override
+            public void onNext(String taskName) {
+                Log.i (TAG, "onNext: " + taskName);
+                _log (String.format (Locale.US, "Executing polled task [%s] now time : [xx:%02d]", taskName, _getSecondHand ()));
+            }
+        });
+        _subscriptions.add (sp1);
+
+
+        //        Subscription sp2 = Observable.interval(INITIAL_DELAY, POLLING_INTERVAL, TimeUnit.MILLISECONDS)
+        //                .map(this::_doNetworkCallAndGetStringResult)//map函数变换操作
+        //                .take(pollCount)//执行订阅发射次数(指取 前POLL_COUNT 发送的数据)
+        //                .doOnSubscribe(() ->
+        //                        _log(String.format("Start simple polling - %s", _counter)))
+        //                .subscribe(taskName -> {//map中发射事件的 订阅回调
+        //                    _log(String.format(Locale.US, "Executing polled task [%s] now time : [xx:%02d]",
+        //                            taskName, _getSecondHand()));
+        //                });
+        //        _subscriptions.add(sp2);
+
+
+
     }
 
     @OnClick(R.id.btn_start_increasingly_delayed_polling)
@@ -97,15 +154,27 @@ public class PollingFragment
         final int pollingInterval = POLLING_INTERVAL;
         final int pollCount = POLL_COUNT;
 
-        _log(String.format(Locale.US, "Start increasingly delayed polling now time: [xx:%02d]", _getSecondHand()));
+        _log (String.format (Locale.US, "Start increasingly delayed polling now time: [xx:%02d]", _getSecondHand ()));
 
-        _disposables.add(Flowable
-                               .just(1L)
-                               .repeatWhen(new RepeatWithDelay(pollCount, pollingInterval))
-                               .subscribe(o -> _log(String.format(Locale.US,
-                                                                  "Executing polled task now time : [xx:%02d]",
-                                                                  _getSecondHand())),
-                                          e -> Timber.d(e, "arrrr. Error")));
+        //        _subscriptions.add(//
+        //              Observable.just(1)
+        //                    .repeatWhen(new RepeatWithDelay(pollCount, pollingInterval))
+        //                    .subscribe(o -> {
+        //                        _log(String.format(Locale.US, "Executing polled task now time : [xx:%02d]",
+        //                              _getSecondHand()));
+        //                    }, e -> {
+        //                        Timber.d(e, "arrrr. Error");
+        //                    })
+        //        );
+
+        _subscriptions.add (Observable.just (1).repeatWhen (new RepeatWithDelay (pollCount, pollingInterval)).subscribe (new Action1<Integer> () {
+            @Override
+            public void call(Integer integer) {//订阅 onNext
+                _log (String.format (Locale.US, "Executing polled task now time : [xx:%02d]", _getSecondHand ()));
+            }
+        }, e -> {
+            Timber.d (e, "arrrr. Error");
+        }));//订阅 onError
     }
 
     // -----------------------------------------------------------------------------------
@@ -124,8 +193,7 @@ public class PollingFragment
                 // randomly make one event super long so we test that the repeat logic waits
                 // and accounts for this.
                 Thread.sleep(9000);
-            }
-            else {
+            } else {
                 Thread.sleep(3000);
             }
 
@@ -142,8 +210,7 @@ public class PollingFragment
 
     private int _getSecondHand() {
         long millis = System.currentTimeMillis();
-        return (int) (TimeUnit.MILLISECONDS.toSeconds(millis) -
-                      TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)));
+        return (int) (TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds (TimeUnit.MILLISECONDS.toMinutes (millis)));
     }
 
     private void _log(String logMsg) {
@@ -151,8 +218,7 @@ public class PollingFragment
             _logs.add(0, logMsg + " (main thread) ");
             _adapter.clear();
             _adapter.addAll(_logs);
-        }
-        else {
+        } else {
             _logs.add(0, logMsg + " (NOT main thread) ");
 
             // You can only do below stuff on main thread.
@@ -175,8 +241,7 @@ public class PollingFragment
     }
 
     //public static class RepeatWithDelay
-    public class RepeatWithDelay
-          implements Function<Flowable<Object>, Publisher<Long>> {
+    public class RepeatWithDelay implements Func1<Observable<? extends Void>, Observable<?>> {
 
         private final int _repeatLimit;
         private final int _pollingInterval;
@@ -192,31 +257,31 @@ public class PollingFragment
         // only onNext triggers a re-subscription
 
         @Override
-        public Publisher<Long> apply(Flowable<Object> inputFlowable) throws Exception {
+        public Observable<?> call(Observable<? extends Void> inputObservable) {
+
             // it is critical to use inputObservable in the chain for the result
             // ignoring it and doing your own thing will break the sequence
 
-            return inputFlowable.flatMap(new Function<Object, Publisher<Long>>() {
+            return inputObservable.flatMap (new Func1<Void, Observable<?>> () {
                 @Override
-                public Publisher<Long> apply(Object o) throws Exception {
+                public Observable<?> call(Void blah) {
                     if (_repeatCount >= _repeatLimit) {
                         // terminate the sequence cause we reached the limit
                         _log("Completing sequence");
-                        return Flowable.empty();
+                        return Observable.empty ();
                     }
 
                     // since we don't get an input
                     // we store state in this handler to tell us the point of time we're firing
                     _repeatCount++;
 
-                    return Flowable.timer(_repeatCount * _pollingInterval, TimeUnit.MILLISECONDS);
+                    return Observable.timer (_repeatCount * _pollingInterval, TimeUnit.MILLISECONDS);
                 }
             });
         }
     }
 
-    private class LogAdapter
-          extends ArrayAdapter<String> {
+    private class LogAdapter extends ArrayAdapter<String> {
 
         public LogAdapter(Context context, List<String> logs) {
             super(context, R.layout.item_log, R.id.item_log, logs);

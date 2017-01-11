@@ -1,21 +1,25 @@
 package com.morihacky.android.rxjava.fragments;
 
-import android.content.Context;
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+
 import com.morihacky.android.rxjava.MainActivity;
-import io.reactivex.Flowable;
-import io.reactivex.processors.PublishProcessor;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.Subscription;
+import rx.subjects.PublishSubject;
+import rx.subjects.Subject;
 
 public class RotationPersist2WorkerFragment
       extends Fragment {
 
-    private PublishProcessor<Integer> _intStream;
-    private PublishProcessor<Boolean> _lifeCycleStream;
-
     private IAmYourMaster _masterFrag;
+    private Subscription _storedIntsSubscription;
+    private Subject<Integer, Integer> _intStream = PublishSubject.create ();
 
     /**
      * Since we're holding a reference to the Master a.k.a Activity/Master Frag
@@ -24,12 +28,10 @@ public class RotationPersist2WorkerFragment
      * See {@link MainActivity#onBackPressed()}
      */
     @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
+    public void onAttach(Activity activity) {
+        super.onAttach (activity);
 
-        List<Fragment> frags = ((MainActivity) context)
-              .getSupportFragmentManager()
-              .getFragments();
+        List<Fragment> frags = ((MainActivity) activity).getSupportFragmentManager ().getFragments ();
         for (Fragment f : frags) {
             if (f instanceof IAmYourMaster) {
                 _masterFrag = (IAmYourMaster) f;
@@ -48,20 +50,10 @@ public class RotationPersist2WorkerFragment
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        _intStream = PublishProcessor.create();
-        _lifeCycleStream = PublishProcessor.create();
-
         // Retain this fragment across configuration changes.
         setRetainInstance(true);
 
-        _intStream.takeUntil(_lifeCycleStream);
-
-        Flowable
-              .interval(1, TimeUnit.SECONDS)
-              .map(Long::intValue)
-              .take(20)
-              .subscribe(_intStream);
-
+        _storedIntsSubscription = Observable.interval (1, TimeUnit.SECONDS).map (Long::intValue).take (20).subscribe (_intStream);
     }
 
     /**
@@ -70,13 +62,7 @@ public class RotationPersist2WorkerFragment
     @Override
     public void onResume() {
         super.onResume();
-        _masterFrag.setStream(_intStream);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        _lifeCycleStream.onComplete();
+        _masterFrag.setStream (_intStream.asObservable ());
     }
 
     /**
@@ -89,7 +75,13 @@ public class RotationPersist2WorkerFragment
         _masterFrag = null;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy ();
+        _storedIntsSubscription.unsubscribe ();
+    }
+
     public interface IAmYourMaster {
-        void setStream(Flowable<Integer> intStream);
+        void setStream(Observable<Integer> intStream);
     }
 }

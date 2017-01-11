@@ -3,33 +3,11 @@ Learning RxJava for Android by example
 
 This is a repository with real-world useful examples of using RxJava with Android. [It usually will be in a constant state of "Work in Progress" (WIP)](http://blog.kaush.co/2014/09/15/learning-rxjava-with-android-by-example/).
 
-I've also been giving talks about Learning Rx using many of the examples listed in this repo.
-
-* [Learning RxJava For Android by Example : Part 1](https://www.youtube.com/watch?v=k3D0cWyNno4) \[[slides](https://speakerdeck.com/kaushikgopal/learning-rxjava-for-android-by-example)\] (SF Android Meetup 2015)
-* [Learning Rx by Example : Part 2](https://vimeo.com/190922794) \[[slides](https://speakerdeck.com/kaushikgopal/learning-rx-by-example-2)\] (Øredev 2016)
+I also gave a talk at a local meetup about warming up to RxJava here. Here's a link to the [video and slides](https://newcircle.com/s/post/1744/2015/06/29/learning-rxjava-for-android-by-example).
 
 ## Examples:
 
-1. [Background work & concurrency (using Schedulers)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#1-background-work--concurrency-using-schedulers)
-2. [Accumulate calls (using buffer)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#2-accumulate-calls-using-buffer)
-3. [Instant/Auto searching text listeners (using Subjects & debounce)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#3-instantauto-searching-text-listeners-using-subjects--debounce)
-4. [Networking with Retrofit & RxJava (using zip, flatmap)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#4-networking-with-retrofit--rxjava-using-zip-flatmap)
-5. [Two-way data binding for TextViews (using PublishSubject)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#5-two-way-data-binding-for-textviews-using-publishsubject)
-6. [Simple and Advanced polling (using interval and repeatWhen)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#6-simple-and-advanced-polling-using-interval-and-repeatwhen)
-7. [Simple and Advanced exponential backoff (using delay and retryWhen)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#7-simple-and-advanced-exponential-backoff-using-delay-and-retrywhen)
-8. [Form validation (using combineLatest)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#8-form-validation-using-combinelatest)
-9. [Pseudo caching : retrieve data first from a cache, then a network call (using concat, concatEager, merge or publish)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#9-pseudo-caching--retrieve-data-first-from-a-cache-then-a-network-call-using-concat-concateager-merge-or-publish)
-10. [Simple timing demos (using timer, interval or delay)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#10-simple-timing-demos-using-timer-interval-and-delay)
-11. [RxBus : event bus using RxJava (using RxRelay (never terminating Subjects) and debouncedBuffer)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#11-rxbus--event-bus-using-rxjava-using-rxrelay-never-terminating-subjects-and-debouncedbuffer)
-12. [Persist data on Activity rotations (using Subjects and retained Fragments)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#12-persist-data-on-activity-rotations-using-subjects-and-retained-fragments)
-13. [Networking with Volley](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#13-networking-with-volley)
-14. [Pagination with Rx (using Subjects)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#14-pagination-with-rx-using-subjects)
-15. [Orchestrating Observable: make parallel network calls, then combine the result into a single data point (using flatmap & zip)](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/README.md#15-orchestrating-observable-make-parallel-network-calls-then-combine-the-result-into-a-single-data-point-using-flatmap--zip)
-16. [Simple Timeout example (using timeout)]()
-
-## Description
-
-### 1. Background work & concurrency (using Schedulers)
+### Concurrency using schedulers
 
 A common requirement is to offload lengthy heavy I/O intensive operations to a background thread (non-UI thread) and feed the results back to the UI/main thread, on completion. This is a demo of how long-running operations can be offloaded to a background thread. After the operation is done, we resume back on the main thread. All using RxJava! Think of this as a replacement to AsyncTasks.
 
@@ -37,7 +15,7 @@ The long operation is simulated by a blocking Thread.sleep call (since this is d
 
 To really see this example shine. Hit the button multiple times and see how the button click (which is a UI operation) is never blocked because the long operation only runs in the background.
 
-### 2. Accumulate calls (using buffer)
+### Accumulate calls (buffer)
 
 This is a demo of how events can be accumulated using the "buffer" operation.
 
@@ -49,7 +27,7 @@ Note:
 
 If you're looking for a more foolproof solution that accumulates "continuous" taps vs just the number of taps within a time span, look at the [EventBus Demo](https://github.com/kaushikgopal/Android-RxJava/blob/master/app/src/main/java/com/morihacky/android/rxjava/rxbus/RxBusDemo_Bottom3Fragment.java) where a combo of the `publish` and `buffer` operators is used. For a more detailed explanation, you can also have a look at this [blog post](http://blog.kaush.co/2015/01/05/debouncedbuffer-with-rxjava/).
 
-### 3. Instant/Auto searching text listeners (using Subjects & debounce)
+### Instant/Auto searching (subject + debounce)
 
 This is a demo of how events can be swallowed in a way that only the last one is respected. A typical example of this is instant search result boxes. As you type the word "Bruce Lee", you don't want to execute searches for B, Br, Bru, Bruce, Bruce, Bruce L ... etc. But rather intelligently wait for a couple of moments, make sure the user has finished typing the whole word, and then shoot out a single call for "Bruce Lee".
 
@@ -57,19 +35,38 @@ As you type in the input box, it will not shoot out log messages at every single
 
 This is the debounce/throttleWithTimeout method in RxJava.
 
-### 4. Networking with Retrofit & RxJava (using zip, flatmap)
+### Retrofit and RxJava (zip, flatmap)
 
 [Retrofit from Square](http://square.github.io/retrofit/) is an amazing library that helps with easy networking (even if you haven't made the jump to RxJava just yet, you really should check it out). It works even better with RxJava and these are examples hitting the GitHub API, taken straight up from the android demigod-developer Jake Wharton's talk at Netflix. You can [watch the talk](https://www.youtube.com/watch?v=aEuNBk1b5OE#t=2480) at this link. Incidentally, my motivation to use RxJava was from attending this talk at Netflix.
 
-(Note: you're most likely to hit the GitHub API quota pretty fast so send in an OAuth-token as a parameter if you want to keep running these examples often).
+Since it was a presentation, Jake only put up the most important code snippets in [his slides](https://speakerdeck.com/jakewharton/2014-1). Also he uses Java 8 in them, so I flushed those examples out in ~~good~~ old Java 6. (Note: you're most likely to hit the GitHub API quota pretty fast so send in an OAuth-token as a parameter if you want to keep running these examples often).
 
-### 5. Two-way data binding for TextViews (using PublishSubject)
+### Volley Demo
+
+[Volley](http://developer.android.com/training/volley/index.html) is another networking library introduced by [Google at IO '13](https://www.youtube.com/watch?v=yhv8l9F44qo). A kind citizen of github contributed this example so we know how to integrate Volley with RxJava.
+
+
+### Orchestrating Observables. Make parallel network calls, then combine the result into a single data point  (flatmap + zip)
+
+The below ascii diagram expresses the intention of our next example with panache. f1,f2,f3,f4,f5 are essentially network calls that when made, give back a result that's needed for a future calculation.
+
+
+             (flatmap)
+    f1 ___________________ f3 _______
+             (flatmap)               |    (zip)
+    f2 ___________________ f4 _______| ___________  final output
+            \                        |
+             \____________ f5 _______|
+
+The code for this example has already been written by one Mr.skehlet in the interwebs. Head over to [the gist](https://gist.github.com/skehlet/9418379) for the code. It's written in pure Java (6) so it's pretty comprehensible if you've understood the previous examples. I'll flush it out here again when time permits or I've run out of other compelling examples.
+
+### Double binding with TextViews
 
 Auto-updating views are a pretty cool thing. If you've dealt with Angular JS before, they have a pretty nifty concept called "two-way data binding", so when an HTML element is bound to a model/entity object, it constantly "listens" to changes on that entity and auto-updates its state based on the model. Using the technique in this example, you could potentially use a pattern like the [Presentation View Model pattern](http://martinfowler.com/eaaDev/PresentationModel.html) with great ease.
 
 While the example here is pretty rudimentary, the technique used to achieve the double binding using a `Publish Subject` is much more interesting.
 
-### 6. Simple and Advanced polling (using interval and repeatWhen)
+### Polling with Schedulers
 
 This is an example of polling using RxJava Schedulers. This is useful in cases, where you want to constantly poll a server and possibly get new data. The network call is "simulated" so it forces a delay before return a resultant string.
 
@@ -84,35 +81,17 @@ Instead of using a RetryWithDelay, we use a RepeatWithDelay here. To understand 
 
 An alternative approach to delayed polling without the use of `repeatWhen` would be using chained nested delay observables. See [startExecutingWithExponentialBackoffDelay in the ExponentialBackOffFragment example](https://github.com/kaushikgopal/RxJava-Android-Samples/blob/master/app/src/main/java/com/morihacky/android/rxjava/fragments/ExponentialBackoffFragment.java#L111).
 
-### 7. Simple and Advanced exponential backoff (using delay and retryWhen)
+### RxBus - An event bus using RxJava + DebouncedBuffer
 
-[Exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) is a strategy where based on feedback from a certain output, we alter the rate of a process (usually reducing the number of retries or increasing the wait time before retrying or re-executing a certain process).
+Have a look at the accompanying blog posts for details on this demo:
 
-The concept makes more sense with examples. RxJava makes it (relatively) simple to implement such a strategy. My thanks to [Mike](https://twitter.com/m_evans10) for suggesting the idea.
+1. [Implementing an event bus with RxJava](http://blog.kaush.co/2014/12/24/implementing-an-event-bus-with-rxjava-rxbus/)
+2. [DebouncedBuffer used for the fancier variant of the demo](http://blog.kaush.co/2015/01/05/debouncedbuffer-with-rxjava/)
+3. [share/publish/refcount](http://blog.kaush.co/2015/01/21/rxjava-tip-for-the-day-share-publish-refcount-and-all-that-jazz/)
 
-#### Retry (if error) with exponential backoff
+### Form validation - using [`.combineLatest`](http://reactivex.io/documentation/operators/combinelatest.html)
 
-Say you have a network failure. A sensible strategy would be to NOT keep retrying your network call every 1 second. It would be smart instead (nay... elegant!) to retry with increasing delays. So you try at second 1 to execute the network call, no dice? try after 10 seconds... negatory? try after 20 seconds, no cookie? try after 1 minute. If this thing is still failing, you got to give up on the network yo!
-
-We simulate this behaviour using RxJava with the [`retryWhen` operator](http://reactivex.io/documentation/operators/retry.html).
-
-`RetryWithDelay` code snippet courtesy:
-
-* http://stackoverflow.com/a/25292833/159825
-* Another excellent implementation via @[sddamico](https://github.com/sddamico) : https://gist.github.com/sddamico/c45d7cdabc41e663bea1
-
-Also look at the [Polling example](https://github.com/kaushikgopal/RxJava-Android-Samples#polling-with-schedulers) where we use a very similar Exponential backoff mechanism.
-
-#### "Repeat" with exponential backoff
-
-Another variant of the exponential backoff strategy is to execute an operation for a given number of times but with delayed intervals. So you execute a certain operation 1 second from now, then you execute it again 10 seconds from now, then you execute the operation 20 seconds from now. After a grand total of 3 times you stop executing.
-
-Simulating this behavior is actually way more simpler than the prevoius retry mechanism. You can use a variant of the `delay` operator to achieve this.
-
-
-### 8. Form validation (using [`.combineLatest`](http://reactivex.io/documentation/operators/combinelatest.html))
-
-Thanks to Dan Lew for giving me this idea in the [fragmented podcast - episode #4](http://fragmentedpodcast.com/episodes/4/) (around the 4:30 mark).
+Thanks to Dan Lew for giving me this idea in the [fragmented podcast - episode #5](http://fragmentedpodcast.com/episodes/4/) (around the 4:30 mark).
 
 `.combineLatest` allows you to monitor the state of multiple observables at once compactly at a single location. The example demonstrated shows how you can use `.combineLatest` to validate a basic form. There are 3 primary inputs for this form to be considered "valid" (an email, a password and a number). The form will turn valid (the text below turns blue :P) once all the inputs are valid. If they are not, an error is shown against the invalid inputs.
 
@@ -122,8 +101,7 @@ Note that the `Func3` function that checks for validity, kicks in only after ALL
 
 The value of this technique becomes more apparent when you have more number of input fields in a form. Handling it otherwise with a bunch of booleans makes the code cluttered and kind of difficult to follow. But using `.combineLatest` all that logic is concentrated in a nice compact block of code (I still use booleans but that was to make the example more readable).
 
-
-### 9. Pseudo caching : retrieve data first from a cache, then a network call (using concat, concatEager, merge or publish)
+### Retrieve data first from a cache, then a network call
 
 We have two source Observables: a disk (fast) cache and a network (fresh) call. Typically the disk Observable is much faster than the network Observable. But in order to demonstrate the working, we've also used a fake "slower" disk cache just to see how the operators behave.
 
@@ -148,7 +126,7 @@ To solve this problem you can use merge in combination with the super nifty `pub
 
 Previously, I was using the `merge` operator but overcoming the problem of results being overwritten by monitoring the "resultAge". See the old `PseudoCacheMergeFragment` example if you're curious to see this old implementation.
 
-### 10. Simple timing demos (using timer, interval and delay)
+### Simple Timing demos using timer/interval/delay
 
 This is a super simple and straightforward example which shows you how to use RxJava's `timer`, `interval` and `delay` operators to handle a bunch of cases where you want to run a task at specific intervals. Basically say NO to Android `TimerTask`s.
 
@@ -160,15 +138,32 @@ Cases demonstrated here:
 4. run a task constantly every 3s, but after running it 5 times, terminate automatically
 5. run a task A, pause for sometime, then execute Task B, then terminate
 
-### 11. RxBus : event bus using RxJava (using RxRelay (never terminating Subjects) and debouncedBuffer)  
+### Exponential backoff
 
-There are accompanying blog posts that do a much better job of explaining the details on this demo:
+[Exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) is a strategy where based on feedback from a certain output, we alter the rate of a process (usually reducing the number of retries or increasing the wait time before retrying or re-executing a certain process).
 
-1. [Implementing an event bus with RxJava](http://blog.kaush.co/2014/12/24/implementing-an-event-bus-with-rxjava-rxbus/)
-2. [DebouncedBuffer used for the fancier variant of the demo](http://blog.kaush.co/2015/01/05/debouncedbuffer-with-rxjava/)
-3. [share/publish/refcount](http://blog.kaush.co/2015/01/21/rxjava-tip-for-the-day-share-publish-refcount-and-all-that-jazz/)
+The concept makes more sense with examples. RxJava makes it (relatively) simple to implement such a strategy. My thanks to [Mike](https://twitter.com/m_evans10) for suggesting the idea.
 
-### 12. Persist data on Activity rotations (using Subjects and retained Fragments)
+#### Retry (if error) with exponential backoff
+
+Say you have a network failure. A sensible strategy would be to NOT keep retrying your network call every 1 second. It would be smart instead (nay... elegant!) to retry with increasing delays. So you try at second 1 to execute the network call, no dice? try after 10 seconds... negatory? try after 20 seconds, no cookie? try after 1 minute. If this thing is still failing, you got to give up on the network yo!
+
+We simulate this behaviour using RxJava with the [`retryWhen` operator](http://reactivex.io/documentation/operators/retry.html).
+
+`RetryWithDelay` code snippet courtesy:
+
+* http://stackoverflow.com/a/25292833/159825
+* Another excellent implementation via @[sddamico](https://github.com/sddamico) : https://gist.github.com/sddamico/c45d7cdabc41e663bea1
+
+Also look at the [Polling example](https://github.com/kaushikgopal/RxJava-Android-Samples#polling-with-schedulers) where we use a very similar Exponential backoff mechanism.
+
+#### "Repeat" with exponential backoff
+
+Another variant of the exponential backoff strategy is to execute an operation for a given number of times but with delayed intervals. So you execute a certain operation 1 second from now, then you execute it again 10 seconds from now, then you execute the operation 20 seconds from now. After a grand total of 3 times you stop executing.
+
+Simulating this behavior is actually way more simpler than the prevoius retry mechanism. You can use a variant of the `delay` operator to achieve this.
+
+### Rotation Persist
 
 A common question that's asked when using RxJava in Android is, "how do i resume the work of an observable if a configuration change occurs (activity rotation, language locale change etc.)?".
 
@@ -182,12 +177,7 @@ I have since rewritten this example using an alternative approach. While the [`C
 
 I wrote [another blog post](https://tech.instacart.com/how-to-think-about-subjects-part-1/) on how to think about Subjects where I go into some specifics.
 
-
-### 13. Networking with Volley
-
-[Volley](http://developer.android.com/training/volley/index.html) is another networking library introduced by [Google at IO '13](https://www.youtube.com/watch?v=yhv8l9F44qo). A kind citizen of github contributed this example so we know how to integrate Volley with RxJava.
-
-### 14. Pagination with Rx (using Subjects)
+### Pagination
 
 I leverage the simple use of a Subject here. Honestly, if you don't have your items coming down via an `Observable` already (like through Retrofit or a network request), there's no good reason to use Rx and complicate things.
 
@@ -201,34 +191,10 @@ Here are some other fancy implementations (while i enjoyed reading them, i didn'
 * [Eugene's very comprehensive Pagination sample](https://github.com/matzuk/PaginationSample)
 * [Recursive Paging example](http://stackoverflow.com/questions/28047272/handle-paging-with-rxjava)
 
-### 15. Orchestrating Observable: make parallel network calls, then combine the result into a single data point (using flatmap & zip)
 
-The below ascii diagram expresses the intention of our next example with panache. f1,f2,f3,f4,f5 are essentially network calls that when made, give back a result that's needed for a future calculation.
+## Work in Progress:
 
-
-             (flatmap)
-    f1 ___________________ f3 _______
-             (flatmap)               |    (zip)
-    f2 ___________________ f4 _______| ___________  final output
-            \                        |
-             \____________ f5 _______|
-
-The code for this example has already been written by one Mr.skehlet in the interwebs. Head over to [the gist](https://gist.github.com/skehlet/9418379) for the code. It's written in pure Java (6) so it's pretty comprehensible if you've understood the previous examples. I'll flush it out here again when time permits or I've run out of other compelling examples.
-
-### 16. Simple Timeout example (using timeout)
-
-This is a simple example demonstrating the use of the `.timeout` operator. Button 1 will complete the task before the timeout constraint, while Button 2 will force a timeout error.
-
-Notice how we can provide a custom Observable that indicates how to react under a timeout Exception.
-
-## Rx 2.x
-
-All the examples here have been migrated to use RxJava 2.X.
-
-* Have a look at [PR #83 to see the diff of changes between RxJava 1 and 2](https://github.com/kaushikgopal/RxJava-Android-Samples/pull/83/files)
-* [What's different in Rx 2.x](https://github.com/ReactiveX/RxJava/wiki/What's-different-in-2.0)
-
-We use [David Karnok's Interop library](https://github.com/akarnokd/RxJava2Interop) in some cases as certain libraries like RxBindings, RxRelays, RxJava-Math etc. have not been ported yet to 2.x.
+Examples that I would like to have here, but haven't found the time yet to flush out.
 
 ## Contributing:
 
