@@ -33,11 +33,24 @@ class PaginationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         _items.addAll(items);
     }
 
+    void clearItems() {
+        if (_items != null) {
+            _items.clear ();
+            notifyDataSetChanged ();
+        }
+
+    }
+
+
+    //配合 getItemCount() 一起使用
     @Override
     public int getItemViewType(int position) {
         if (position == _items.size()) {
-            return ITEM_BTN;
+            return ITEM_BTN;// 第 items+1 项用于做为控制按钮
         }
+
+        //        if(position==0)
+        //            return ITEM_BTN;
 
         return ITEM_LOG;
     }
@@ -93,6 +106,11 @@ class PaginationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                   .inflate(R.layout.item_btn, parent, false));
         }
 
+        /**
+         * 点击加载更多
+         *
+         * @param bus
+         */
         void bindContent(RxBus bus) {
             ((Button) itemView).setText(R.string.btn_demo_pagination_more);
             itemView.setOnClickListener(v -> bus.send(new ItemBtnViewHolder.PageEvent()));

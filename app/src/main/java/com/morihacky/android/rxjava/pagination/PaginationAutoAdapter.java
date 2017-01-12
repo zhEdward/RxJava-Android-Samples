@@ -36,7 +36,7 @@ class PaginationAutoAdapter
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         ((ItemLogViewHolder) holder).bindContent(_items.get(position));
 
-        //判断当前位置是否已经在recycleview 末尾 触发加载事件
+        //判断当前位置是否已经在recycleview 末尾 触发加载事件(实现自动加载更多)
         Log.i (TAG, "onBindViewHolder: " + position);
         boolean lastPositionReached = position == _items.size() - 1;
         if (lastPositionReached) {

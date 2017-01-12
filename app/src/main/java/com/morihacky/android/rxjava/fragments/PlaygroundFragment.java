@@ -90,7 +90,9 @@ public class PlaygroundFragment
                                                 return Observable.timer (2, TimeUnit.SECONDS).map (l -> s1);
                                             }
                                         }).retryWhen (source -> source.delay (8, TimeUnit.SECONDS))
-                          /*, 3*/).doOnNext (s -> _log (s + "stop")).subscribeOn (Schedulers.io ()).observeOn (AndroidSchedulers.mainThread ()).subscribe ();
+                          /*, 3*/).doOnNext (s -> _log (s + "stop")).subscribeOn (Schedulers.io ()).//指定所有操作符 在 异步线程执行
+                        observeOn (AndroidSchedulers.mainThread ())//在主线程中 进行观察(回调  onbserver or subscriber 的 方法)
+                        .subscribe ();
     }
 
     // -----------------------------------------------------------------------------------

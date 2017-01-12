@@ -20,7 +20,7 @@
     <string name="btn_demo_exponential_backoff">Exponential backoff</string>
     <string name="btn_demo_rotation_persist">Rotation persist（完全不懂这个demo要表达神恶魔）</string>
     <string name="btn_demo_volley">Volley request demo</string>
-    <string name="btn_demo_pagination">Paging example \n 类似于listview 滑动到边界自动加载更多</string>
+    <string name="btn_demo_pagination">Paging example \n recycledview 滑动到边界自动(default)/手动加载更多数据</string>
     <string name="btn_demo_pagination_more">MOAR</string>
 
     <string name="msg_demo_pagination">This is a demo of how you can do a list pagination with Rx. We page 10 items at a time and there are 55 items altogether</string>

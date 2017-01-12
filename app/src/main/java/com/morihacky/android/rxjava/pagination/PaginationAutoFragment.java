@@ -27,9 +27,11 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.subjects.PublishSubject;
-import rx.subjects.SerializedSubject;
 import rx.subscriptions.CompositeSubscription;
 
+/**
+ * recycledview 向下滑动到边界自动加载更多
+ */
 public class PaginationAutoFragment extends BaseFragment {
 
     @Bind(R.id.list_paging)
@@ -44,51 +46,56 @@ public class PaginationAutoFragment extends BaseFragment {
     private CompositeSubscription _subscriptions;
 
     @Override
-    public View onCreateView(LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        View layout = inflater.inflate(R.layout.fragment_pagination, container, false);
-        ButterKnife.bind(this, layout);
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View layout = inflater.inflate (R.layout.fragment_pagination, container, false);
+        ButterKnife.bind (this, layout);
         return layout;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+        super.onActivityCreated (savedInstanceState);
 
-        _bus = ((MainActivity) getActivity()).getRxBusSingleton();
+        _bus = ((MainActivity) getActivity ()).getRxBusSingleton ();
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
-        _pagingList.setLayoutManager(layoutManager);
+        LinearLayoutManager layoutManager = new LinearLayoutManager (getActivity ());
+        layoutManager.setOrientation (LinearLayoutManager.VERTICAL);
+        _pagingList.setLayoutManager (layoutManager);
 
-        _adapter = new PaginationAutoAdapter(_bus);
-        _pagingList.setAdapter(_adapter);
+        _adapter = new PaginationAutoAdapter (_bus);
+        _pagingList.setAdapter (_adapter);
 
         _paginator = PublishSubject.create ();
 
-        new SerializedSubject (PublishSubject.create ());
+        //  new SerializedSubject (PublishSubject.create ());
     }
 
     // TODO: 2016/12/19 不是太理解 onBackpressureDrop() 使用场景说明 
     @Override
     public void onStart() {
-        super.onStart();
+        super.onStart ();
         _subscriptions = new CompositeSubscription ();
 
 
         Subscription s2 =//
-                _paginator.onBackpressureDrop ().doOnNext (i -> {
+                _paginator.onBackpressureDrop ()//该op 将源 obsevables 支持 背压操作
+                        .doOnNext (i -> {
+                            Log.i (TAG, "doOnNext1: ");
                     _requestUnderWay = true;
                     _progressBar.setVisibility (View.VISIBLE);
-                }).concatMap (this::_itemsFromNetworkCall).observeOn (AndroidSchedulers.mainThread ()).map (items -> {
+                        }).concatMap (this::_itemsFromNetworkCall).observeOn (AndroidSchedulers.mainThread ())
+                        // FIXME: 2017/1/12 
+                        //之前concatMap 把源observables 所有op 执行事物的调度器转移搭配 异步上(through defer(...))，
+                        // 为了后续op能正确 执行 更新UI 操作 所以要 重新指定 observeOn 回归主线程调度器
+                        .map (items -> {
                     _adapter.addItems (items);
                     _adapter.notifyDataSetChanged ();
                     return null;
                 }).doOnNext (i -> {
+                    Log.i (TAG, "doOnNext2: ");
                     _requestUnderWay = false;
                     _progressBar.setVisibility (View.INVISIBLE);
-                }).subscribe ();
+                }).doOnNext (i -> Log.i (TAG, "doOnNext3: ")).subscribe (o -> Log.i (TAG, "onNext: "));
 
         // I'm using an RxBus purely to hear from a nested button click
         // we don't really need Rx for this part. it's just easy ¯\_(ツ)_/¯
@@ -110,7 +117,9 @@ public class PaginationAutoFragment extends BaseFragment {
                 //出发订阅对象的回调 条件
                 return !_requestUnderWay;
             }
-        }).subscribe (new Action1<Object> () {//object 只能使用范型?特定的可能无法
+        }).subscribe (new Action1<Object> () {
+            //subscribe 默认接受 泛型 action，
+            // 可以在subscribe前 使用 ofType(object.class)操作符进行强转接收指定类型action
 
             @Override
             public void call(Object pageEvent) {
@@ -124,12 +133,13 @@ public class PaginationAutoFragment extends BaseFragment {
         _subscriptions.add (s1);
         _subscriptions.add (s2);
 
-        _paginator.onNext(0);
+        _paginator.onNext (0);
+
     }
 
     @Override
     public void onStop() {
-        super.onStop();
+        super.onStop ();
         _subscriptions.clear ();
     }
 
@@ -148,8 +158,9 @@ public class PaginationAutoFragment extends BaseFragment {
         //                    return items;
         //                });
 
-        return Observable.just (true).observeOn (AndroidSchedulers.mainThread ()).delay (2, TimeUnit.SECONDS).map (new Func1<Boolean, List<String>> () {
-
+        return Observable.just (true).
+                observeOn (AndroidSchedulers.mainThread ()).delay (2, TimeUnit.SECONDS)//异步执行
+                .map (new Func1<Boolean, List<String>> () {
             @Override
             public List<String> call(Boolean aBoolean) {
                 //函数转换

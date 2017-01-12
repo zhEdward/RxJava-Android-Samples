@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 
 import com.morihacky.android.rxjava.R;
 import com.morihacky.android.rxjava.RxUtils;
@@ -24,6 +25,7 @@ import butterknife.OnClick;
 import rx.Observable;
 import rx.Observer;
 import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action1;
 import timber.log.Timber;
 
@@ -35,6 +37,10 @@ import static android.os.Looper.myLooper;
  */
 public class TimingDemoFragment
       extends BaseFragment {
+
+    @Bind(R.id.loadingBar)
+    ProgressBar _progressBar;
+
 
     @Bind(R.id.list_threading_log) ListView _logsList;
 
@@ -72,12 +78,17 @@ public class TimingDemoFragment
     @OnClick(R.id.btn_demo_timing_1)
     public void btn1_RunSingleTaskAfter2s() {
         _log(String.format("A1 [%s] --- BTN click", _getCurrentTimestamp()));
-
+        _progressBar.setVisibility (View.VISIBLE);
         Observable.timer (2, TimeUnit.SECONDS)////.just(1).delay(2, TimeUnit.SECONDS)//
-
+                .map (l -> {//前一个操作符 在 computation执行，map如果未指定 observeOn(...)将继续异步执行
+                    _log ("map-op status");
+                    return l;
+                }).observeOn (AndroidSchedulers.mainThread ())
                 .subscribe (new Observer<Long> () {
                     @Override
                     public void onCompleted() {
+                        //不指定 observeOn 将会异常提示：Only the original thread that created a view hierarchy can touch its views.
+                        _progressBar.setVisibility (View.GONE);
                         _log (String.format ("A1 [%s] XXX COMPLETE", _getCurrentTimestamp ()));
                     }
 

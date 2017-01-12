@@ -68,30 +68,42 @@ public class TimeoutDemoFragment
 
     @OnClick(R.id.btn_demo_timeout_1_5s)
     public void onStart5sTask() {
+        _clearLog ();
         _subscription = _getObservableFor5sTask ()//
-                .timeout (2, TimeUnit.SECONDS, _getTimeoutObservable ())
-              .subscribeOn(Schedulers.computation())
-              .observeOn(AndroidSchedulers.mainThread()).subscribe (_getEventCompletionObserver ());
+                .doOnNext (o -> {
+                    _log ("doOnNext-callback");
+                }).timeout (2, TimeUnit.SECONDS, _getTimeoutObservable ())//前后发射最大间隔2s
+                .map (s -> {//受到 timer 的调度器 影响
+                    _log ("map1-op");
+                    return s;
+                }).subscribeOn (Schedulers.computation ())//控制 create 操作符
+                .observeOn (AndroidSchedulers.mainThread ()).map (s -> {//主线程
+                    _log ("map2-op");
+                    return s;
+                })
+
+                .subscribe (_getEventCompletionObserver ());
     }
 
     // -----------------------------------------------------------------------------------
     // Main Rx entities
 
     private Observable<String> _getObservableFor5sTask() {
+        // 需要有
         return Observable.create (new Observable.OnSubscribe<String> () {
 
             @Override
             public void call(Subscriber<? super String> subscriber) {
-
+                //当前线程（即 主线程）
                 if (!subscriber.isUnsubscribed ()) {
                     _log (String.format ("Starting a 5s task"));
                     subscriber.onNext ("5 s");
                     try {
-                        Thread.sleep (1200);
+                        Thread.sleep (5000);
                     } catch (InterruptedException e) {
                         e.printStackTrace ();
                     }
-                    subscriber.onCompleted ();
+                    //subscriber.onCompleted ();
                 }
 
             }
@@ -115,9 +127,14 @@ public class TimeoutDemoFragment
                 }
 
             }
-        }).subscribeOn (Schedulers.computation ()).timeout (3, TimeUnit.SECONDS);
+        }).doOnSubscribe (() -> _clearLog ()).subscribeOn (Schedulers.computation ()).timeout (3, TimeUnit.SECONDS);//in computation scheduler
+        //前后2个 数据发射间隔超过3s ，将触发 timeoutException
     }
 
+    /**
+     * 当 timeout eexception  的时候  对observables 进行特殊处理
+     * 使其不会触发  subscriber/observer 的onError 转向执行自定义的 操作(call())
+     */
     private Observable<? extends String> _getTimeoutObservable() {
         return Observable.create (new Observable.OnSubscribe<String> () {
 
@@ -132,6 +149,7 @@ public class TimeoutDemoFragment
         });
     }
 
+    //create 订阅者
     private Observer<String> _getEventCompletionObserver() {
         return new Observer<String> () {
 
@@ -161,6 +179,12 @@ public class TimeoutDemoFragment
         _logs = new ArrayList<>();
         _adapter = new LogAdapter(getActivity(), new ArrayList<>());
         _logsList.setAdapter(_adapter);
+    }
+
+    private void _clearLog() {
+        _logs.clear ();
+        _adapter.clear ();
+        _adapter.notifyDataSetChanged ();
     }
 
     private void _log(String logMsg) {
