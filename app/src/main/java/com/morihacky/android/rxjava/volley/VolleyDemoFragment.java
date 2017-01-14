@@ -47,31 +47,31 @@ public class VolleyDemoFragment extends BaseFragment {
     private List<String> _logs;
     private LogAdapter _adapter;
 
-    private CompositeSubscription _compositeSubscription = new CompositeSubscription ();
+    private CompositeSubscription _compositeSubscription = new CompositeSubscription();
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View layout = inflater.inflate (R.layout.fragment_volley, container, false);
-        ButterKnife.bind (this, layout);
+        View layout = inflater.inflate(R.layout.fragment_volley, container, false);
+        ButterKnife.bind(this, layout);
         return layout;
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated (savedInstanceState);
-        _setupLogger ();
+        super.onActivityCreated(savedInstanceState);
+        _setupLogger();
     }
 
     @Override
     public void onPause() {
-        super.onPause ();
-        _compositeSubscription.clear ();
+        super.onPause();
+        _compositeSubscription.clear();
     }
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView ();
-        ButterKnife.unbind (this);
+        super.onDestroyView();
+        ButterKnife.unbind(this);
     }
 
     /**
@@ -99,63 +99,74 @@ public class VolleyDemoFragment extends BaseFragment {
         //        });
 
         //lamba syntax
-        return Observable.defer (() -> {//通过 subscribeOn 指定 调度器(异步网络请求)
+        return Observable.defer(() -> {//通过 subscribeOn 指定 调度器(异步网络请求)
             try {
                 //volley 请求远程数据
-                return Observable.just (getRouteData ("fuzhou"), getRouteData ("beijing"), getRouteData ("youqi"));
+                return Observable.just(getRouteData("fuzhou"), getRouteData("beijing"), getRouteData("youqi"));
 
             } catch (InterruptedException | ExecutionException e) {
-                Log.e ("routes", e.getMessage ());
-                return Observable.error (e);
+                Log.e("routes", e.getMessage());
+                return Observable.error(e);
             }
         });
     }
 
     @OnClick(R.id.btn_start_operation)
     void startRequest() {
-        startVolleyRequest ();
+        startVolleyRequest();
     }
 
     private void startVolleyRequest() {
-        _compositeSubscription.add (newGetRouteData ().
-                doOnSubscribe (() -> Log.i (TAG, "defer " + "has be subscribed")).
-                subscribeOn (Schedulers.io ()).
-                observeOn (AndroidSchedulers.mainThread ()).
-                subscribe (new Observer<JSONObject> () {
+        _compositeSubscription.add(newGetRouteData().
+               // subscribeOn(Schedulers.newThread()).
+                doOnSubscribe(() -> _log("doOnSubscribe")).
+                subscribeOn(Schedulers.io()).
+                doOnNext(data->_log("doOnNext")).
+                observeOn(AndroidSchedulers.mainThread()).
+                doOnTerminate(()->_log("doOnTerminate")).
+                observeOn(AndroidSchedulers.mainThread()).
+                doOnCompleted(()-> _log("doOnCompleted")).
+
+                subscribe(new Observer<JSONObject>() {
                     @Override
                     public void onCompleted() {
-                        Log.e (TAG, "onCompleted");
-                        Timber.d ("----- onCompleted");
-                        _log ("onCompleted ");
+                      //  Log.e(TAG, "onCompleted");
+                      //  Timber.d("----- onCompleted");
+                        _log("onCompleted ");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        VolleyError cause = (VolleyError) e.getCause ();
-                        String s = new String (cause.networkResponse.data, Charset.forName ("UTF-8"));
-                        Log.e (TAG, s);
-                        Log.e (TAG, cause.toString ());
-                        _log ("onError " + s);
+                        VolleyError cause = (VolleyError) e.getCause();
+                        String s = new String(cause.networkResponse.data, Charset.forName("UTF-8"));
+                     //   Log.e(TAG, s);
+                     //   Log.e(TAG, cause.toString());
+                        _log("onError " + s);
                     }
 
                     @Override
                     public void onNext(JSONObject jsonObject) {
-                        Log.e (TAG, "onNext " + jsonObject.toString ());
-                        _log ("onNext " + jsonObject.toString ());
+                     //   Log.e(TAG, "onNext " + jsonObject.toString());//
+
+                        _log("onNext " + jsonObject.toString());
 
                     }
                 }));
     }
 
-    public static Map<String, String> cityMaps = new HashMap<> ();
-
-    static {
-        cityMaps.put ("beijing", "101010100");
-        cityMaps.put ("fuzhou", "101230101");
-        cityMaps.put ("haerbin", "101050101");
-        cityMaps.put ("youqi", "101230809");
+    public String checkthread(){
+        return Looper.getMainLooper()==Looper.myLooper()? " [in main thread]":" [in "+Thread.currentThread().getName()+"]";
     }
 
+
+    public static Map<String, String> cityMaps = new HashMap<>();
+
+    static {
+        cityMaps.put("beijing", "101010100");
+        cityMaps.put("fuzhou", "101230101");
+        cityMaps.put("haerbin", "101050101");
+        cityMaps.put("youqi", "101230809");
+    }
 
 
     /**
@@ -164,59 +175,59 @@ public class VolleyDemoFragment extends BaseFragment {
      * Converts the Asynchronous Request into a Synchronous Future that can be used to
      * block via {@code Future.get()}. Observables require blocking/synchronous functions
      *
-     *@param  pinyinCity
-     *
+     * @param pinyinCity
      * @return JSONObject
      * @throws ExecutionException
      * @throws InterruptedException
      */
     private JSONObject getRouteData(String pinyinCity) throws ExecutionException, InterruptedException {
-        Log.i (TAG, "volley start");
+        Log.i(TAG, "volley start");
 
-        Thread.sleep (1000);
+        Thread.sleep(1000);
 
-        RequestFuture<JSONObject> future = RequestFuture.newFuture ();
-        String url = "http://www.weather.com.cn/adat/sk/" + cityMaps.get (pinyinCity).toString () + ".html";
+        RequestFuture<JSONObject> future = RequestFuture.newFuture();
+        String url = "http://www.weather.com.cn/adat/sk/" + cityMaps.get(pinyinCity).toString() + ".html";
         // url = "http://www.weather.com.cn/adat/sk/101010100.html";
         if (url == null) {
-            throw new IllegalArgumentException ("查询地拼音不正确 或者暂时没有收入");
+            throw new IllegalArgumentException("查询地拼音不正确 或者暂时没有收入");
         } else {
-            Log.i (TAG, "getRouteData: " + url);
+            Log.i(TAG, "getRouteData: " + url);
         }
-        JsonObjectRequest req = new JsonObjectRequest (Request.Method.GET, url, future, future);
+        JsonObjectRequest req = new JsonObjectRequest(Request.Method.GET, url, future, future);
 
-        MyVolley.getRequestQueue ().add (req);
-        Log.i (TAG, "volley over");
-        return future.get ();
+        MyVolley.getRequestQueue().add(req);
+        Log.i(TAG, "volley over");
+        _log("getRouteData");
+        return future.get();
     }
 
     // -----------------------------------------------------------------------------------
     // Methods that help wiring up the example (irrelevant to RxJava)
 
     private void _setupLogger() {
-        _logs = new ArrayList<> ();
-        _adapter = new LogAdapter (getActivity (), new ArrayList<> ());
-        _logsList.setAdapter (_adapter);
+        _logs = new ArrayList<>();
+        _adapter = new LogAdapter(getActivity(), new ArrayList<>());
+        _logsList.setAdapter(_adapter);
     }
 
     private void _log(String logMsg) {
 
-        if (_isCurrentlyOnMainThread ()) {
-            _logs.add (0, logMsg + " (main thread) ");
-            _adapter.clear ();
-            _adapter.addAll (_logs);
+        if (_isCurrentlyOnMainThread()) {
+            _logs.add(0, logMsg +"[ "+Thread.currentThread().getName()+"]" );//" (main thread) "
+            _adapter.clear();
+            _adapter.addAll(_logs);
         } else {
-            _logs.add (0, logMsg + " (NOT main thread) ");
+            _logs.add(0, logMsg + "[ "+Thread.currentThread().getName()+"]");//" (NOT main thread) "
 
             // You can only do below stuff on main thread.
-            new Handler (Looper.getMainLooper ()).post (() -> {
-                _adapter.clear ();
-                _adapter.addAll (_logs);
+            new Handler(Looper.getMainLooper()).post(() -> {
+                _adapter.clear();
+                _adapter.addAll(_logs);
             });
         }
     }
 
     private boolean _isCurrentlyOnMainThread() {
-        return Looper.myLooper () == Looper.getMainLooper ();
+        return Looper.myLooper() == Looper.getMainLooper();
     }
 }

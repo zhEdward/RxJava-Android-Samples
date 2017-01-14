@@ -80,10 +80,13 @@ public class TimingDemoFragment
         _log(String.format("A1 [%s] --- BTN click", _getCurrentTimestamp()));
         _progressBar.setVisibility (View.VISIBLE);
         Observable.timer (2, TimeUnit.SECONDS)////.just(1).delay(2, TimeUnit.SECONDS)//
-                .map (l -> {//前一个操作符 在 computation执行，map如果未指定 observeOn(...)将继续异步执行
+                .map (l -> {//前一个操作符 在 computation执行，map如果未指定 subscribeOn(...)将继续异步执行
                     _log ("map-op status");
                     return l;
-                }).observeOn (AndroidSchedulers.mainThread ())
+                })
+                .doOnNext(l->_log("doNoNext"))
+                .observeOn (AndroidSchedulers.mainThread ())
+                .doOnCompleted(()->_log("doOnCompleted"))
                 .subscribe (new Observer<Long> () {
                     @Override
                     public void onCompleted() {

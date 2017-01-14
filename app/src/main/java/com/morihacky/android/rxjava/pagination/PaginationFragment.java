@@ -74,8 +74,9 @@ public class PaginationFragment extends BaseFragment {
                 .concatMap (nextPage -> _itemsFromNetworkCall (nextPage + 1, 10))//
                 .observeOn (AndroidSchedulers.mainThread ())//控制（未指定调度器的）所有操作符，在主线程执行
                 .map (items -> {
-                    //该op不再特定scheduler执行，但是指定的事务涉及到 mainthread
-                    //所以在该op的链式调用前需要用 observeOn 指定 主线程中执行
+                    //该op默认不再特定scheduler执行，因为受到 之前 concatMap中（delay-op导向scheduler）
+                    //该op中 是要跟新 UI 所以在该op的链式调用前需要用 observeOn 指定 主线程中执行
+                    //不然 该map-op 仍将在 computation scheduler执行事务
                     int start = _adapter.getItemCount () - 1;
                     _adapter.addItems (items);
                     _adapter.notifyItemRangeInserted (start, 10);
