@@ -17,5 +17,9 @@ public class BaseFragment
         RefWatcher refWatcher = MyApp.getRefWatcher();
         refWatcher.watch(this);
         //use leak canary catch memroy leak
+
+
+
     }
+    
 }

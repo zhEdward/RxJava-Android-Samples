@@ -59,6 +59,7 @@ public class FormValidationCombineLatestFragment extends BaseFragment {
 
         _combineLatestEvents();
 
+
         return layout;
     }
 
